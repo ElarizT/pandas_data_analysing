@@ -1,46 +1,41 @@
 import pandas as pd
 import seaborn as sb
 
-# import the data
-df = pd.read_csv('train.csv')
+# Load the data
+df = pd.read_csv('shipment.csv')
 
-df.head(10)
-df.dtypes
+# Filter for California and Standard Class
+df2 = df[(df['State'] == 'California') & (df['Ship Mode'] == 'Standard Class')].copy()
 
-# Clean up data
-df[df['State'] == 'California']
-df2 = df[(df['State'] == 'California') & (df['Ship Mode'] == 'Standard Class')]
-
-# delete numbers after dot in postal codes
+# Remove decimals from postal codes
 df2['Postal Code'] = df2['Postal Code'].astype(str).str.split('.').str.get(0)
 
-# drop "Region" column
-df2 = df2.drop(['Region'], axis = 1)
+# Drop unnecessary columns
+df2.drop(columns=['Region', 'Row ID'], inplace=True)
 
-# drop "Row ID" column
-df2 = df2.drop(['Row ID'], axis = 1)
+# Check for null values
+print(df2.isna().sum())
 
-df2.head()
+# Check for duplicates
+print(df2.duplicated().sum())
 
-# check if there are null values
-df2.isna().sum()
+# Reset the index
+df2.reset_index(drop=True, inplace=True)
 
-# check if there are any duplicates
-df2[df2.duplicated() == True]
-
-# reset the index numbers
-df2.reset_index(drop = True)
-
-# visualize the comparison num of selled categories in different years
-sb.histplot(df2, x = df2['Order Date'].astype(str).str.split('/').str[2], hue = 'Category')
-
-# vizualize the amount of sales over years
+# Add Order_Year and Month columns for visualization
 df2['Order_Year'] = df2['Order Date'].astype(str).str.split('/').str[2]
+df2['Month'] = df2['Order Date'].astype(str).str.split('/').str[1]
+
+# Visualize the comparison of the number of sold categories in different years
+sb.histplot(data=df2, x='Order_Year', hue='Category')
+
+# Visualize the amount of sales over years
 sb.barplot(data=df2, x='Order_Year', y='Sales')
 
-# which category sells the best
-df2.groupby(['Category'])['Sales'].sum()
+# Find which category sells the best
+best_selling_category = df2.groupby('Category')['Sales'].sum()
+print(best_selling_category)
 
-# which month is the best selling one in average
-df2['Month'] = df2['Order Date'].astype(str).str.split('/').str[1]
-df2.groupby(['Month'])['Sales'].mean()
+# Find the best selling month on average
+best_selling_month = df2.groupby('Month')['Sales'].mean()
+print(best_selling_month)
